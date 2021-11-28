@@ -1,4 +1,6 @@
 var fs = require("fs");
+var events = require("events");
+const { once } = require("events");
 
 function PythonshellInNode(config) {
   if (!config.pyfile){
@@ -16,62 +18,40 @@ function PythonshellInNode(config) {
     throw 'configured virtualenv not exist, consider remove or change';
   }
 
-  this.stdInData = config.stdInData;
-  this.continuous = this.stdInData ? true : config.continuous;
+  this.continuous = config.continuous;
   this.pydir = this.pyfile.substring(0, this.pyfile.lastIndexOf('/'));
   this.pyfile = this.pyfile.substring(this.pyfile.lastIndexOf('/') + 1, this.pyfile.length);
+  this.args = config.args
   this.spawn = require('child_process').spawn;
   this.onStatus = ()=>{}
+  this.eventEmitter = new events.EventEmitter();
 }
 
-PythonshellInNode.prototype.onInput = function(msg, out, err) {
-  payload = msg.payload || '';
-  if (typeof payload === 'object'){
-    payload = JSON.stringify(payload);
-  } else if (typeof payload !== 'string'){
-    payload = payload.toString();
-  }
+PythonshellInNode.prototype.onInput = async function(msg, out, err) {
+  // Every new data results in stopping and possibly restarting the script execution
+  if (this.py != null)
+  {
+    this.onClose()
+    await once(this.eventEmitter, 'py-closed');
 
-  if (payload === 'pythonshell@close'){
-    if (this.py != null){
-      this.onClose()
+    // If Received this kind of message, and script was running, don't restart
+    if (msg.payload == 'pythonshell@StartOrStop') {
       return
-    } else {
-      // trigger new execution
-      payload = ''
     }
-  }
-
-  if (this.continuous && !this.stdInData && this.py != null){
-    this.onStatus({fill:"yellow",shape:"dot",text:"Not accepting input"})
-    return
   }
 
   var spawnCmd = (this.virtualenv ? this.virtualenv + '/bin/' : '') + this.pythonExec
 
-  if (this.stdInData){
-    if (!this.py){
-      this.py = this.spawn(spawnCmd, ['-u', this.pyfile], {
-        cwd: this.pydir,
-        detached: true
-      });
-      this.firstExecution = true
-    } else {
-      this.firstExecution = false
-    }
-  } else {
-    this.py = this.spawn(spawnCmd, ['-u', this.pyfile, payload], {
-      cwd: this.pydir
-    });
-  }
+  // If arguments is set in the config always use it, otherwise try to use args from msg
+  let args = this.args || msg.args || ''
+  args = args.split(' ').filter(i=>i)
+
+  this.py = this.spawn(spawnCmd, ['-u', this.pyfile, ...args], {
+    cwd: this.pydir
+    // detached: true
+  });
 
   this.onStatus({fill:"green",shape:"dot",text:"Standby"})
-
-  // subsequence message, no need to setup callbacks
-  if (this.stdInData && !this.firstExecution){
-    this.py.stdin.write(payload + '\n')
-    return
-  }
 
   var py = this.py;
   var dataString = '';
@@ -88,8 +68,9 @@ PythonshellInNode.prototype.onInput = function(msg, out, err) {
 
     if (dataString.endsWith("\n")){
       if (this.continuous){
-        msg.payload = dataString;
-        out(msg);
+        for (let line of dataString.split("\n").filter(i=>i)) {
+          out({payload: line});
+        }
         dataString = ''
       }
     }
@@ -115,8 +96,7 @@ PythonshellInNode.prototype.onInput = function(msg, out, err) {
       err('exit code: ' + code + ', ' + errString);
       this.onStatus({fill:"red",shape:"dot",text:"Exited: " + code})
     } else if (!this.continuous){
-      msg.payload = dataString.trim();
-      out(msg);
+      out({payload: dataString.trim()});
       this.onStatus({fill:"green",shape:"dot",text:"Done"})
     } else {
       this.onStatus({fill:"yellow",shape:"dot",text:"Script Closed"})
@@ -125,12 +105,11 @@ PythonshellInNode.prototype.onInput = function(msg, out, err) {
     setTimeout(()=>{
       this.onStatus({})
     }, 2000)
+    this.eventEmitter.emit('py-closed')
   });
-
-  if (this.stdInData){
-    py.stdin.write(payload + '\n')
-  }
 };
+
+
 
 PythonshellInNode.prototype.onClose = function() {
   if (this.py){

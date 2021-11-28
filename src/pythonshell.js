@@ -48,11 +48,7 @@ module.exports = function(RED) {
     var node = RED.nodes.getNode(req.params.id);
     if (node != null) {
       try {
-        if (node.config.continuous){// see above comment
-          node.receive({payload: 'pythonshell@close'})
-        } else {
-          node.receive();
-        }
+        node.receive({payload: 'pythonshell@StartOrStop'})
         res.sendStatus(200);
       } catch(err) {
           res.sendStatus(500);
