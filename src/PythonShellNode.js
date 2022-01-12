@@ -11,7 +11,7 @@ function PythonshellInNode(config) {
   this.virtualenv = config.virtualenv;
 
   if (!fs.existsSync(this.pyfile)) {
-    throw 'pyfile not exist';
+    throw `pyfile ${this.pyfile} not exist`;
   }
 
   if (this.virtualenv && !fs.existsSync(this.virtualenv)){
