@@ -46,6 +46,7 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
   let args = this.args || msg.args || ''
   args = args.split(' ').filter(i=>i)
 
+  console.log(`Running PythonShell ${spawnCmd} -u ${this.pyfile} with ${args}`);
   this.py = this.spawn(spawnCmd, ['-u', this.pyfile, ...args], {
     cwd: this.pydir
     // detached: true
