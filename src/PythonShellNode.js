@@ -83,8 +83,12 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
   });
 
   py.stderr.on('data', data => {
-    errString += String(data);// just a different way to do it
-    this.onStatus({fill:"red",shape:"dot",text:"Error: " + errString})
+    let dataStr = String(data)
+    if (!errString.includes(dataStr))
+    {
+      errString += String(data);
+      this.onStatus({fill:"red",shape:"dot",text:"Error: " + errString})
+    }
   });
 
   py.stderr.on('error', console.log)
