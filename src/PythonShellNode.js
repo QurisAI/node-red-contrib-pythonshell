@@ -35,9 +35,14 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
     await once(this.eventEmitter, 'py-closed');
 
     // If Received this kind of message, and script was running, don't restart
-    if (msg.payload == 'pythonshell@StartOrStop') {
+    if ((msg.payload == 'pythonshell@StartOrStop') || (msg.payload == 'pythonshell@Stop')) {
       return
     }
+  }
+
+  if (msg.payload == 'pythonshell@Stop')
+  {
+    return
   }
 
   var spawnCmd = (this.virtualenv ? this.virtualenv + '/bin/' : '') + this.pythonExec
