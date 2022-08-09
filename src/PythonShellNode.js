@@ -2,7 +2,7 @@ var fs = require("fs");
 var events = require("events");
 const { once } = require("events");
 
-function PythonshellInNode(config) {
+function PythonshellInNode(RED, config) {
   if (!config.pyfile){
     throw 'pyfile not present';
   }
@@ -25,6 +25,7 @@ function PythonshellInNode(config) {
   this.spawn = require('child_process').spawn;
   this.onStatus = ()=>{}
   this.eventEmitter = new events.EventEmitter();
+  this.RED = RED;
 }
 
 PythonshellInNode.prototype.onInput = async function(msg, out, err) {
@@ -76,7 +77,7 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
       if (this.continuous){
         for (let line of dataString.split("\n").filter(i=>i)) {
           msg.payload = line
-          out(msg);
+          out(this.RED.util.cloneMessage(msg));
         }
         dataString = ''
       }
@@ -108,7 +109,7 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
       this.onStatus({fill:"red",shape:"dot",text:"Exited: " + code})
     } else if (!this.continuous){
       msg.payload = dataString.trim()
-      out(msg);
+      out(this.RED.util.cloneMessage(msg));
       this.onStatus({fill:"green",shape:"dot",text:"Done"})
     } else {
       this.onStatus({fill:"yellow",shape:"dot",text:"Script Closed"})

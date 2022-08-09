@@ -27,7 +27,7 @@ module.exports = function(RED) {
     var node = this;
     node.config = n; // copy config to the backend so that down bellow we can have a reference
 
-    var pyNode = new PythonshellNode(n);
+    var pyNode = new PythonshellNode(RED, n);
 
     pyNode.setStatusCallback(node.status.bind(node))
 
