@@ -75,7 +75,8 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
     if (dataString.endsWith("\n")){
       if (this.continuous){
         for (let line of dataString.split("\n").filter(i=>i)) {
-          out({payload: line});
+          msg.payload = line
+          out(msg);
         }
         dataString = ''
       }
@@ -103,10 +104,11 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
 
   py.on('close', code =>{
     if (code){
-      err('exit code: ' + code + ', ' + errString);
+      err('exit code: ' + code + ', ' + errString, msg);
       this.onStatus({fill:"red",shape:"dot",text:"Exited: " + code})
     } else if (!this.continuous){
-      out({payload: dataString.trim()});
+      msg.payload = dataString.trim()
+      out(msg);
       this.onStatus({fill:"green",shape:"dot",text:"Done"})
     } else {
       this.onStatus({fill:"yellow",shape:"dot",text:"Script Closed"})

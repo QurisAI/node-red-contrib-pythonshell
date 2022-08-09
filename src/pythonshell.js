@@ -30,12 +30,12 @@ module.exports = function(RED) {
     var pyNode = new PythonshellNode(n);
 
     pyNode.setStatusCallback(node.status.bind(node))
-  
+
     node.on("input",function(msg) {
       pyNode.onInput(msg, function(result){
         node.send(result);
       }, function(err){
-        node.error(err);
+        node.error(err, msg);
       });
     });
 
