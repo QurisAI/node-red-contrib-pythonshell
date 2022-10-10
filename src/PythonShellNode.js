@@ -83,9 +83,9 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
       }
     }
 
-    this.standbyTimer = setTimeout(()=>{
+    // this.standbyTimer = setTimeout(()=>{
       this.onStatus({fill:"green",shape:"dot",text:"Standby"})
-    }, 2000)
+    // }, 2000)
 
   });
 
@@ -115,9 +115,9 @@ PythonshellInNode.prototype.onInput = async function(msg, out, err) {
       this.onStatus({fill:"yellow",shape:"dot",text:"Script Closed"})
     }
     this.py = null
-    setTimeout(()=>{
+    // setTimeout(()=>{
       this.onStatus({})
-    }, 2000)
+    // }, 2000)
     this.eventEmitter.emit('py-closed')
   });
 };
